@@ -1,0 +1,419 @@
+<!DOCTYPE html>
+<html lang="de">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+    <title>CCNA Subnetting Lab</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+
+<body>
+    <header>
+        <h1>CCNA Subnetting Lab</h1>
+        <p>Ändere eine Zahl und sieh sofort, was im Netzwerk passiert — inklusive Erklärung, warum.</p>
+    </header>
+    <main>
+
+        <section class="block hero" id="secviz" aria-live="polite">
+            <span class="eyebrow">Hauptfunktion</span>
+            <h2>Adressraum-Visualisierer</h2>
+            <p class="sub">Jedes Oktett als Raster aus 256 möglichen Werten, mit der Dezimalzahl im Hintergrund. Blau =
+                durch das Präfix festgelegt, Orange = frei für Hosts/Subnetze.</p>
+            <div class="row">
+                <div class="field"><label for="vip">IPv4-Adresse</label><input type="text" id="vip"
+                        value="192.168.50.1"></div>
+                <div class="field"><label for="vcidr">Präfix: <b id="vcidrval">/24</b></label><input type="range"
+                        id="vcidr" min="0" max="32" value="24"></div>
+            </div>
+            <div class="row" id="vpresets"></div>
+            <div id="vgrids" class="viz-grids"></div>
+            <div id="vexplain" class="explain"></div>
+        </section>
+
+        <section class="block" id="seccmp" aria-live="polite">
+            <h2>Subnetzmasken-Vergleich</h2>
+            <p class="sub">Dieselbe Adresse, übereinandergelegt bei verschiedenen Masken. So siehst du, wie ein größeres
+                Netz in immer kleinere Subnetze zerfällt — und wo deine Adresse jeweils landet.</p>
+            <div class="row">
+                <div class="field"><label for="cmpip">IPv4-Adresse</label><input type="text" id="cmpip"
+                        value="192.168.1.130"></div>
+                <div class="field"><label for="cmpbase">Basis-Präfix: <b id="cmpbaseval">/24</b></label><input
+                        type="range" id="cmpbase" min="8" max="29" value="24"></div>
+            </div>
+            <div class="cmp-rows" id="cmprows"></div>
+            <div class="cmp-info" id="cmpinfo"></div>
+        </section>
+
+        <section class="block" id="sec1" aria-live="polite">
+            <h2>1. Subnetz-Rechner</h2>
+            <p class="sub">IP-Adresse und Präfix eingeben. Alles darunter aktualisiert sich live.</p>
+            <div class="row">
+                <div class="field">
+                    <label for="s1ip">IPv4-Adresse</label>
+                    <input type="text" id="s1ip" value="192.168.10.50" inputmode="numeric">
+                </div>
+                <div class="field" style="max-width:120px">
+                    <label for="s1cidr">CIDR (/0–/32)</label>
+                    <input type="number" id="s1cidr" value="26" min="0" max="32">
+                </div>
+            </div>
+            <div id="s1error" class="error" role="alert"></div>
+            <div id="s1out"></div>
+        </section>
+
+        <section class="block" id="sec2">
+            <h2>2. Sind diese Geräte im selben Netzwerk?</h2>
+            <p class="sub">Zwei Geräte, eine gemeinsame Maske — direkt erreichbar oder über das Gateway?</p>
+            <div class="row">
+                <div class="field"><label for="s2a">Gerät A</label><input type="text" id="s2a" value="192.168.1.10">
+                </div>
+                <div class="field"><label for="s2b">Gerät B</label><input type="text" id="s2b" value="192.168.2.10">
+                </div>
+                <div class="field" style="max-width:120px"><label for="s2cidr">Maske /</label><input type="number"
+                        id="s2cidr" value="24" min="0" max="32"></div>
+            </div>
+            <div id="s2out"></div>
+        </section>
+
+        <section class="block" id="sec3">
+            <h2>3. CIDR-Explorer</h2>
+            <p class="sub">Je länger das Präfix, desto mehr Netzwerkbits — desto weniger Platz für Hosts.</p>
+            <label for="s3range">Präfix: <b id="s3val">/24</b></label>
+            <input type="range" id="s3range" min="16" max="30" value="24">
+            <div id="s3bar"></div>
+            <table id="s3table">
+                <thead>
+                    <tr>
+                        <th>/CIDR</th>
+                        <th>Maske</th>
+                        <th>Adressen</th>
+                        <th>Hosts</th>
+                    </tr>
+                </thead>
+                <tbody></tbody>
+            </table>
+        </section>
+
+        <section class="block" id="sec4">
+            <h2>4. IP-Konfiguration validieren</h2>
+            <p class="sub">Prüft eine vollständige Host-Konfiguration Schritt für Schritt.</p>
+            <div class="row">
+                <div class="field"><label for="s4ip">IP-Adresse</label><input type="text" id="s4ip"
+                        value="192.168.1.50"></div>
+                <div class="field" style="max-width:120px"><label for="s4cidr">Maske /</label><input type="number"
+                        id="s4cidr" value="24" min="0" max="32"></div>
+                <div class="field"><label for="s4gw">Default Gateway</label><input type="text" id="s4gw"
+                        value="192.168.2.1"></div>
+            </div>
+            <ul class="checklist" id="s4list"></ul>
+        </section>
+
+        <section class="block" id="sec5">
+            <h2>5. Fehler-Trainer</h2>
+            <p class="sub">Klassifiziere die Adresse richtig — mit Erklärung nach jeder Antwort.</p>
+            <div id="s5task" style="font-family:var(--mono);font-size:1.05rem;margin-bottom:.4rem"></div>
+            <div class="opt-grid" id="s5opts"></div>
+            <div id="s5feedback"></div>
+            <button class="secondary" id="s5next" style="margin-top:.8rem">Neue Aufgabe</button>
+        </section>
+
+        <section class="block" id="sec6" style="border-left-color:var(--host)">
+            <h2>CCNA-Merksatz</h2>
+            <ul class="merk">
+                <li><b>IP-Adresse</b> = welches Gerät</li>
+                <li><b>Subnetzmaske</b> = welches Netzwerk</li>
+                <li><b>Netzwerkadresse</b> = Anfang des Netzwerks</li>
+                <li><b>Broadcast</b> = letzte Adresse des Netzwerks</li>
+                <li><b>Hostbereich</b> = Adressen für Geräte</li>
+                <li><b>Default Gateway</b> = Router für andere Netzwerke</li>
+            </ul>
+        </section>
+
+    </main>
+    <footer>Alle Berechnungen laufen lokal im Browser — keine Daten werden übertragen.</footer>
+
+    <script>
+        // ---------- Kern-Logik ----------
+        function parseIP(str) {
+            if (typeof str !== 'string') return {valid: false, error: 'Keine Eingabe.'};
+            const t = str.trim();
+            if (t === '') return {valid: false, error: 'Bitte eine IPv4-Adresse eingeben.'};
+            const parts = t.split('.');
+            if (parts.length !== 4) return {valid: false, error: 'Ungültig, weil vier Oktette benötigt werden (z. B. 192.168.1.1).'};
+            const octets = [];
+            for (const p of parts) {
+                if (!/^\d+$/.test(p)) return {valid: false, error: `Ungültiges Zeichen in "${p}" — nur Ziffern erlaubt.`};
+                const n = parseInt(p, 10);
+                if (n > 255) return {valid: false, error: `Ungültig, weil ein IPv4-Oktett maximal 255 sein darf (gefunden: ${n}).`};
+                octets.push(n);
+            }
+            return {valid: true, octets};
+        }
+        function ipToInt(o) {return ((o[0] << 24) | (o[1] << 16) | (o[2] << 8) | o[3]) >>> 0;}
+        function intToIp(n) {return [(n >>> 24) & 255, (n >>> 16) & 255, (n >>> 8) & 255, n & 255].join('.');}
+        function cidrToMaskInt(c) {return c === 0 ? 0 : (0xFFFFFFFF << (32 - c)) >>> 0;}
+        function toBin8(n) {return n.toString(2).padStart(8, '0');}
+        function subnetInfo(ipInt, cidr) {
+            const maskInt = cidrToMaskInt(cidr);
+            const network = (ipInt & maskInt) >>> 0;
+            const hostBits = 32 - cidr;
+            const broadcast = cidr === 32 ? network : (network | (~maskInt >>> 0)) >>> 0;
+            const total = Math.pow(2, hostBits);
+            let firstHost, lastHost, usable;
+            if (cidr >= 31) {firstHost = network; lastHost = broadcast; usable = cidr === 32 ? 1 : 2;}
+            else {firstHost = network + 1; lastHost = broadcast - 1; usable = total - 2;}
+            return {maskInt, network, broadcast, firstHost, lastHost, total, usable, hostBits};
+        }
+        function bitGridHTML(ipInt, cidr) {
+            let html = '<div class="bits">';
+            for (let g = 0; g < 4; g++) {
+                html += '<div class="bitgroup">';
+                const byte = (ipInt >>> ((3 - g) * 8)) & 255;
+                const bits = toBin8(byte);
+                for (let i = 0; i < 8; i++) {
+                    const globalBitIndex = g * 8 + i;
+                    const cls = globalBitIndex < cidr ? 'net' : 'host';
+                    html += `<div class="bit ${cls}">${bits[i]}</div>`;
+                }
+                html += '</div>';
+            }
+            html += '</div>';
+            return html;
+        }
+
+        // ---------- Sektion 1 ----------
+        const s1ip = document.getElementById('s1ip'), s1cidr = document.getElementById('s1cidr');
+        const s1error = document.getElementById('s1error'), s1out = document.getElementById('s1out');
+        function renderS1() {
+            const res = parseIP(s1ip.value);
+            const cidrRaw = s1cidr.value;
+            if (!res.valid) {s1error.textContent = res.error; s1out.innerHTML = ''; return;}
+            const cidr = parseInt(cidrRaw, 10);
+            if (isNaN(cidr) || cidr < 0 || cidr > 32) {s1error.textContent = 'CIDR muss zwischen /0 und /32 liegen.'; s1out.innerHTML = ''; return;}
+            s1error.textContent = '';
+            const ipInt = ipToInt(res.octets);
+            const info = subnetInfo(ipInt, cidr);
+            const maskOct = [24, 16, 8, 0].map(sh => (info.maskInt >>> sh) & 255).join('.');
+            let html = '';
+            html += bitGridHTML(ipInt, cidr);
+            html += '<div class="legend"><span class="l-net">Netzwerkbits (fest, bestimmt durch /' + cidr + ')</span><span class="l-host">Hostbits (variabel, adressieren Geräte)</span></div>';
+            html += '<div class="results">';
+            const rows = [
+                ['Subnetzmaske', maskOct],
+                ['Netzwerkadresse', intToIp(info.network)],
+                ['Broadcast-Adresse', intToIp(info.broadcast)],
+                ['Erster nutzbarer Host', info.usable > 0 ? intToIp(info.firstHost) : '—'],
+                ['Letzter nutzbarer Host', info.usable > 0 ? intToIp(info.lastHost) : '—'],
+                ['Alle Adressen', info.total.toLocaleString('de-DE')],
+                ['Nutzbare Hosts', info.usable.toLocaleString('de-DE')],
+                ['Host-Bits', info.hostBits]
+            ];
+            for (const [k, v] of rows) {html += `<div class="resitem"><div class="k">${k}</div><div class="v">${v}</div></div>`;}
+            html += '</div>';
+            html += `<div class="explain">Die Adresse besteht aus 32 Bits. Die ersten ${cidr} Bits sind bei jeder Adresse in diesem Netz identisch (Netzwerkbits). Die restlichen ${info.hostBits} Bits dürfen variieren — sie unterscheiden die Geräte. Alle Kombinationen dieser Hostbits ergeben zusammen den Adressbereich von ${intToIp(info.network)} bis ${intToIp(info.broadcast)}. Davon ist die erste Kombination (alle Hostbits 0) die Netzwerkadresse und die letzte (alle Hostbits 1) die Broadcast-Adresse — deshalb bleiben dazwischen ${info.usable.toLocaleString('de-DE')} nutzbare Adressen für Geräte übrig.</div>`;
+            s1out.innerHTML = html;
+        }
+        s1ip.addEventListener('input', renderS1); s1cidr.addEventListener('input', renderS1);
+
+        // ---------- Sektion 2 ----------
+        const s2a = document.getElementById('s2a'), s2b = document.getElementById('s2b'), s2cidr = document.getElementById('s2cidr'), s2out = document.getElementById('s2out');
+        function renderS2() {
+            const ra = parseIP(s2a.value), rb = parseIP(s2b.value), cidr = parseInt(s2cidr.value, 10);
+            if (!ra.valid) {s2out.innerHTML = `<div class="error">Gerät A: ${ra.error}</div>`; return;}
+            if (!rb.valid) {s2out.innerHTML = `<div class="error">Gerät B: ${rb.error}</div>`; return;}
+            if (isNaN(cidr) || cidr < 0 || cidr > 32) {s2out.innerHTML = '<div class="error">Maske muss zwischen /0 und /32 liegen.</div>'; return;}
+            const ia = ipToInt(ra.octets), ib = ipToInt(rb.octets);
+            const na = subnetInfo(ia, cidr).network, nb = subnetInfo(ib, cidr).network;
+            const same = na === nb;
+            let html = `<div class="results">
+    <div class="resitem"><div class="k">Netzwerk A</div><div class="v">${intToIp(na)}/${cidr}</div></div>
+    <div class="resitem"><div class="k">Netzwerk B</div><div class="v">${intToIp(nb)}/${cidr}</div></div>
+  </div>`;
+            if (same) {
+                html += `<div class="explain good"><span class="badge ok">Gleiches Subnetz</span><br><br>Beide Geräte berechnen dieselbe Netzwerkadresse. Gerät A kann Gerät B daher direkt über Layer 2 (Switch) erreichen — ohne Router.</div>`;
+            } else {
+                html += `<div class="explain bad"><span class="badge bad">Unterschiedliche Subnetze</span><br><br>Das Ziel befindet sich in einem anderen Netzwerk. Der Host muss das Paket an sein Default Gateway schicken, damit es dorthin weitergeleitet werden kann.</div>`;
+            }
+            s2out.innerHTML = html;
+        }
+        [s2a, s2b, s2cidr].forEach(el => el.addEventListener('input', renderS2));
+
+        // ---------- Sektion 3 ----------
+        const s3range = document.getElementById('s3range'), s3val = document.getElementById('s3val'), s3bar = document.getElementById('s3bar');
+        const s3tbody = document.querySelector('#s3table tbody');
+        function buildS3Table() {
+            let html = '';
+            for (let c = 16; c <= 30; c++) {
+                const info = subnetInfo(0, c);
+                const maskOct = [24, 16, 8, 0].map(sh => (info.maskInt >>> sh) & 255).join('.');
+                html += `<tr data-cidr="${c}"><td>/${c}</td><td>${maskOct}</td><td>${info.total.toLocaleString('de-DE')}</td><td>${info.usable.toLocaleString('de-DE')}</td></tr>`;
+            }
+            s3tbody.innerHTML = html;
+        }
+        function renderS3() {
+            const c = parseInt(s3range.value, 10);
+            s3val.textContent = '/' + c;
+            const netPct = (c / 32 * 100).toFixed(0);
+            s3bar.innerHTML = `<div class="split-bar"><div class="n" style="width:${netPct}%"></div><div class="h" style="width:${100 - netPct}%"></div></div><div class="legend"><span class="l-net">Netzwerkbits: ${c}</span><span class="l-host">Hostbits: ${32 - c}</span></div>`;
+            [...s3tbody.children].forEach(tr => tr.classList.toggle('current', parseInt(tr.dataset.cidr, 10) === c));
+        }
+        buildS3Table(); s3range.addEventListener('input', renderS3);
+
+        // ---------- Sektion 4 ----------
+        const s4ip = document.getElementById('s4ip'), s4cidr = document.getElementById('s4cidr'), s4gw = document.getElementById('s4gw'), s4list = document.getElementById('s4list');
+        function checkItem(ok, text) {return `<li><span class="ic">${ok ? '✅' : '❌'}</span><span>${text}</span></li>`;}
+        function renderS4() {
+            const ripip = parseIP(s4ip.value), rgw = parseIP(s4gw.value), cidr = parseInt(s4cidr.value, 10);
+            let html = '';
+            if (!ripip.valid) {s4list.innerHTML = checkItem(false, 'IP-Adresse: ' + ripip.error); return;}
+            html += checkItem(true, 'IP-Adresse ist syntaktisch gültig.');
+            if (isNaN(cidr) || cidr < 0 || cidr > 32) {s4list.innerHTML = html + checkItem(false, 'Maske muss zwischen /0 und /32 liegen.'); return;}
+            const ipInt = ipToInt(ripip.octets);
+            const info = subnetInfo(ipInt, cidr);
+            const isNetwork = ipInt === info.network && cidr < 31;
+            const isBroadcast = ipInt === info.broadcast && cidr < 31;
+            html += checkItem(!isNetwork, isNetwork ? `IP ist die Netzwerkadresse (${intToIp(info.network)}) — sie kennzeichnet das Netz selbst und darf keinem Gerät zugewiesen werden.` : 'IP ist keine Netzwerkadresse.');
+            html += checkItem(!isBroadcast, isBroadcast ? `IP ist die Broadcast-Adresse (${intToIp(info.broadcast)}) — sie adressiert alle Geräte im Netz gleichzeitig und darf keinem einzelnen Gerät gehören.` : 'IP ist keine Broadcast-Adresse.');
+            if (!rgw.valid) {html += checkItem(false, 'Gateway: ' + rgw.error); s4list.innerHTML = html; return;}
+            const gwInt = ipToInt(rgw.octets);
+            const gwInfo = subnetInfo(gwInt, cidr);
+            const sameNet = gwInfo.network === info.network;
+            html += checkItem(sameNet, sameNet ? `Gateway ${intToIp(gwInt)} liegt im selben Subnetz (${intToIp(info.network)}/${cidr}).` : `Gateway ${intToIp(gwInt)} liegt NICHT im gleichen lokalen Subnetz wie der Host (${intToIp(info.network)}/${cidr}).`);
+            const gwIsNetOrBcast = (gwInt === gwInfo.network || gwInt === gwInfo.broadcast) && cidr < 31;
+            html += checkItem(!gwIsNetOrBcast, gwIsNetOrBcast ? 'Gateway ist selbst eine Netz- oder Broadcast-Adresse und damit keine gültige Host-Adresse.' : 'Gateway ist eine gültige Host-Adresse.');
+            const overallOk = !isNetwork && !isBroadcast && sameNet && !gwIsNetOrBcast;
+            html += `<li style="border-bottom:none;padding-top:.6rem"><span class="badge ${overallOk ? 'ok' : 'bad'}">${overallOk ? 'Gültige Konfiguration' : 'Ungültige / problematische Konfiguration'}</span></li>`;
+            s4list.innerHTML = html;
+        }
+        [s4ip, s4cidr, s4gw].forEach(el => el.addEventListener('input', renderS4));
+
+        // ---------- Sektion 5: Fehler-Trainer ----------
+        const s5task = document.getElementById('s5task'), s5opts = document.getElementById('s5opts'), s5feedback = document.getElementById('s5feedback'), s5next = document.getElementById('s5next');
+        let currentTask = null;
+        function randInt(a, b) {return Math.floor(Math.random() * (b - a + 1)) + a;}
+        function newTask() {
+            s5feedback.innerHTML = '';
+            const cidr = randInt(24, 28);
+            const info0 = subnetInfo(0, cidr);
+            const netBase = randInt(0, 255 - (info0.total / 256 || 1)); // simplistic, use /24-ish base
+            const baseIp = [192, 168, randInt(1, 20), 0];
+            const baseInt = ipToInt(baseIp) & cidrToMaskInt(cidr);
+            const offsetChoice = randInt(0, 2); // 0 network, 1 broadcast, 2 valid host
+            const info = subnetInfo(baseInt, cidr);
+            let targetInt, correct;
+            if (offsetChoice === 0) {targetInt = info.network; correct = 'Netzwerkadresse';}
+            else if (offsetChoice === 1) {targetInt = info.broadcast; correct = 'Broadcast-Adresse';}
+            else {targetInt = info.network + randInt(1, Math.max(1, info.usable)); correct = 'gültiger Host';}
+            currentTask = {targetInt, cidr, correct, info};
+            s5task.textContent = `Ist diese Konfiguration gültig? ${intToIp(targetInt)}/${cidr}`;
+            const options = ['gültiger Host', 'Netzwerkadresse', 'Broadcast-Adresse', 'ungültige IP'];
+            s5opts.innerHTML = options.map(o => `<button data-opt="${o}">${o}</button>`).join('');
+            [...s5opts.children].forEach(btn => btn.addEventListener('click', () => answerTask(btn.dataset.opt)));
+        }
+        function answerTask(choice) {
+            const {targetInt, cidr, correct, info} = currentTask;
+            const isCorrect = choice === correct;
+            let expl = '';
+            if (correct === 'Broadcast-Adresse') {
+                expl = `${intToIp(targetInt)} ist bei /${cidr} die Broadcast-Adresse. Ein /${cidr}-Netz hat ${info.total} Adressen: die erste (${intToIp(info.network)}) ist die Netzwerkadresse, die letzte (${intToIp(info.broadcast)}) der Broadcast. Damit bleiben ${intToIp(info.firstHost)} bis ${intToIp(info.lastHost)} für Hosts.`;
+            } else if (correct === 'Netzwerkadresse') {
+                expl = `${intToIp(targetInt)} ist bei /${cidr} die Netzwerkadresse — hier sind alle Hostbits 0. Nutzbar sind erst ${intToIp(info.firstHost)} bis ${intToIp(info.lastHost)}.`;
+            } else {
+                expl = `${intToIp(targetInt)} liegt bei /${cidr} zwischen Netzwerk- (${intToIp(info.network)}) und Broadcast-Adresse (${intToIp(info.broadcast)}) und ist damit ein gültiger Host.`;
+            }
+            s5feedback.innerHTML = `<div class="explain ${isCorrect ? 'good' : 'bad'}"><span class="badge ${isCorrect ? 'ok' : 'bad'}">${isCorrect ? 'Richtig' : 'Falsch'}</span><br><br>Richtige Antwort: <b>${correct}</b><br>${expl}</div>`;
+        }
+        s5next.addEventListener('click', newTask);
+
+        // ---------- Adressraum-Visualisierer ----------
+        // Rendering-Prinzip: jedes der 4 Oktette wird als 16x16-Raster (256 Werte) gezeichnet.
+        // Pro Oktett wird berechnet, wie viele seiner 8 Bit durch das Präfix fixiert sind:
+        //   - alle 8 fest  -> genau 1 Wert markiert (fixiert)
+        //   - keins fest   -> ganzes Raster "frei" (Oktett komplett variabel)
+        //   - teils fest   -> der Block, der den Ist-Wert enthält, wird markiert (Bereich)
+        const vip = document.getElementById('vip'), vcidr = document.getElementById('vcidr'), vcidrval = document.getElementById('vcidrval');
+        const vgridsEl = document.getElementById('vgrids'), vexplain = document.getElementById('vexplain'), vpresets = document.getElementById('vpresets');
+        const octLabels = ['Oktett 1 (Bit 0–7)', 'Oktett 2 (Bit 8–15)', 'Oktett 3 (Bit 16–23)', 'Oktett 4 (Bit 24–31)'];
+        const vgridCells = [[], [], [], []];
+        for (let o = 0; o < 4; o++) {
+            const wrap = document.createElement('div'); wrap.className = 'octblock';
+            const big = document.createElement('div'); big.className = 'octbig'; big.id = 'octbig' + o; big.textContent = '—'; wrap.appendChild(big);
+            const h = document.createElement('h4'); h.textContent = octLabels[o]; wrap.appendChild(h);
+            const grid = document.createElement('div'); grid.className = 'octgrid';
+            for (let v = 0; v < 256; v++) {const c = document.createElement('div'); grid.appendChild(c); vgridCells[o].push(c);}
+            wrap.appendChild(grid); vgridsEl.appendChild(wrap);
+        }
+        function renderViz() {
+            const res = parseIP(vip.value);
+            const cidr = parseInt(vcidr.value, 10);
+            vcidrval.textContent = '/' + cidr;
+            if (!res.valid) {vexplain.textContent = res.error; return;}
+            const ipInt = ipToInt(res.octets);
+            const info = subnetInfo(ipInt, cidr);
+            const parts = [];
+            for (let o = 0; o < 4; o++) {
+                const levelStart = o * 8, octVal = res.octets[o], cells = vgridCells[o];
+                document.getElementById('octbig' + o).textContent = octVal;
+                if (cidr <= levelStart) {
+                    for (let v = 0; v < 256; v++) cells[v].className = 'free';
+                    parts.push(`Oktett ${o + 1}: frei (256 Werte möglich)`);
+                } else if (cidr >= levelStart + 8) {
+                    for (let v = 0; v < 256; v++) cells[v].className = (v === octVal) ? 'exact' : '';
+                    parts.push(`Oktett ${o + 1}: fest auf ${octVal}`);
+                } else {
+                    const k = cidr - levelStart, blockSize = 256 >> k, blockStart = Math.floor(octVal / blockSize) * blockSize;
+                    for (let v = 0; v < 256; v++) cells[v].className = (v >= blockStart && v < blockStart + blockSize) ? 'range' : '';
+                    parts.push(`Oktett ${o + 1}: ${k} Bit fest / ${8 - k} frei → Bereich ${blockStart}–${blockStart + blockSize - 1}`);
+                }
+            }
+            vexplain.innerHTML = `<b>${intToIp(ipInt)}/${cidr}</b> → Netzwerk ${intToIp(info.network)}, Broadcast ${intToIp(info.broadcast)}, <b>${info.usable.toLocaleString('de-DE')}</b> nutzbare Hosts.<br>${parts.join(' · ')}`;
+        }
+        vip.addEventListener('input', renderViz); vcidr.addEventListener('input', renderViz);
+        const presets = [
+            {ip: '192.168.0.1', cidr: 24}, {ip: '192.168.50.1', cidr: 25}, {ip: '192.168.10.50', cidr: 27},
+            {ip: '10.0.0.1', cidr: 8}, {ip: '172.16.5.10', cidr: 16}, {ip: '10.20.30.40', cidr: 22}
+        ];
+        vpresets.innerHTML = presets.map(p => `<button class="chip secondary" data-ip="${p.ip}" data-cidr="${p.cidr}">${p.ip}/${p.cidr}</button>`).join('');
+        [...vpresets.children].forEach(btn => btn.addEventListener('click', () => {vip.value = btn.dataset.ip; vcidr.value = btn.dataset.cidr; renderViz();}));
+
+        // ---------- Subnetzmasken-Vergleich ----------
+        // Prinzip: ein Basis-Präfix definiert einen "Block". Für jede Maske ab diesem Präfix
+        // wird der Block in 2^(cidr-basis) gleich große Subnetze geteilt (nur Anzahl + Position
+        // nötig, keine Adress-Enumeration) — das zeigt direkt, wie Subnetze ineinander verschachtelt sind.
+        const cmpip = document.getElementById('cmpip'), cmpbase = document.getElementById('cmpbase'), cmpbaseval = document.getElementById('cmpbaseval');
+        const cmprows = document.getElementById('cmprows'), cmpinfo = document.getElementById('cmpinfo');
+        function renderCompare() {
+            const res = parseIP(cmpip.value);
+            const baseCidr = parseInt(cmpbase.value, 10);
+            cmpbaseval.textContent = '/' + baseCidr;
+            if (!res.valid) {cmprows.innerHTML = ''; cmpinfo.innerHTML = `<span class="error">${res.error}</span>`; return;}
+            const ipInt = ipToInt(res.octets);
+            const baseMask = cidrToMaskInt(baseCidr);
+            const baseNetwork = (ipInt & baseMask) >>> 0;
+            const blockTotal = Math.pow(2, 32 - baseCidr);
+            const maxRows = 7;
+            const lastCidr = Math.min(32, baseCidr + maxRows - 1);
+            let html = '';
+            for (let c = baseCidr; c <= lastCidr; c++) {
+                const n = Math.pow(2, c - baseCidr);
+                const size = blockTotal / n;
+                const idx = Math.floor((ipInt - baseNetwork) / size);
+                let segs = '';
+                const showN = Math.min(n, 64);
+                for (let i = 0; i < showN; i++) {segs += `<div class="cmp-seg${i === idx ? ' active' : ''}"></div>`;}
+                html += `<div class="cmp-row"><div class="cmp-label">/${c} · ${n}×</div><div class="cmp-bar">${segs}</div></div>`;
+            }
+            cmprows.innerHTML = html;
+            const markerPct = ((ipInt - baseNetwork) / blockTotal * 100).toFixed(2);
+            const idxAtBase = Math.floor((ipInt - baseNetwork) / (blockTotal / Math.pow(2, lastCidr - baseCidr)));
+            cmpinfo.innerHTML = `Basis: <b>${intToIp(baseNetwork)}/${baseCidr}</b> — bei /${lastCidr} liegt ${intToIp(ipInt)} in Subnetz Nr. ${idxAtBase + 1} von ${Math.pow(2, lastCidr - baseCidr)}. Jede zusätzliche Maskenstufe halbiert die Subnetzgröße und verdoppelt die Anzahl der Netze — die Grenzen bleiben dabei exakt erhalten (verschachtelt statt neu verteilt).`;
+        }
+        [cmpip, cmpbase].forEach(el => el.addEventListener('input', renderCompare));
+
+        // ---------- Initial render ----------
+        renderS1(); renderS2(); renderS3(); renderS4(); renderViz(); renderCompare(); newTask();
+    </script>
+</body>
+
+</html>
