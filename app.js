@@ -301,6 +301,15 @@ const calc = (function () {
     prev.addEventListener('click', () => shift(-1));
     next.addEventListener('click', () => shift(1));
     $('s1rand').addEventListener('click', () => {ip.value = intToIp(randomPrivateIp()); setVal(cidrEl, randInt(16, 30));});
+    $('s1share').addEventListener('click', () => {
+        if (!state) return;
+        const base = location.href.split(/[?#]/)[0];
+        copyText(`${base}?ip=${intToIp(state.ipInt)}&cidr=${state.cidr}#calc`);
+    });
+    // Geteilter Link: ?ip=…&cidr=…
+    const qs = new URLSearchParams(location.search);
+    if (parseIP(qs.get('ip') || '').valid) ip.value = qs.get('ip').trim();
+    if (/^\d+$/.test(qs.get('cidr') || '') && +qs.get('cidr') <= 32) {cidrEl.value = qs.get('cidr'); document.querySelector('[data-sync=s1cidr]').value = qs.get('cidr');}
     [ip, cidrEl].forEach(el => el.addEventListener('input', render));
     function load(ipStr, c) {ip.value = ipStr; setVal(cidrEl, c); goTo('calc');}
     return {render, load};
@@ -441,21 +450,61 @@ const check = (function () {
 
 // ---------- 06 Subnetz-Teiler ----------
 const splitter = (function () {
-    const ip = $('spip'), cidrEl = $('spcidr'), n = $('spn'), out = $('spout'), lbl = $('spnlbl');
+    const ip = $('spip'), cidrEl = $('spcidr'), n = $('spn'), out = $('spout'), lbl = $('spnlbl'), vl = $('spvl');
     const SHOW = 64;
     let showAll = false;
     const mode = segControl($('spmode'), m => {
+        const isVl = m === 'vlsm';
+        $('spnfield').hidden = isVl; $('spvlfield').hidden = !isVl;
+        if (isVl) {render(); return;}
         lbl.textContent = m === 'nets' ? 'Benötigte Netze' : 'Hosts pro Netz';
         setVal(n, m === 'nets' ? 4 : 50);
     });
+    const errBox = msg => {out.innerHTML = `<div class="error">${msg}</div>`;};
+    // VLSM: größte Anforderung zuerst vergeben — so liegt jedes Subnetz automatisch auf seiner Blockgrenze
+    function renderVlsm(ipInt, baseNet, base) {
+        const raw = vl.value.split(/[,;\s]+/).filter(Boolean);
+        const ok = raw.length > 0 && raw.every(x => /^\d+$/.test(x) && +x >= 1);
+        markValid(vl, ok);
+        if (!ok) return errBox('Bitte Host-Anzahlen durch Komma getrennt eingeben, z. B. 50, 20, 10, 2.');
+        if (raw.length > 64) return errBox('Maximal 64 Netze.');
+        const letters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+        const reqs = raw.map((x, i) => ({name: i < 26 ? 'Netz ' + letters[i] : 'Netz ' + (i + 1), hosts: +x, i}));
+        const sorted = [...reqs].sort((a, b) => b.hosts - a.hosts || a.i - b.i);
+        const baseSize = Math.pow(2, 32 - base);
+        let off = 0;
+        for (const q of sorted) {
+            let hb = 2; while (Math.pow(2, hb) - 2 < q.hosts) hb++;
+            q.c = 32 - hb; q.size = Math.pow(2, hb); q.off = off; off += q.size;
+        }
+        if (off > baseSize) return errBox(`Passt nicht: Die Netze brauchen zusammen ${fmt(off)} Adressen, ein /${base} hat nur ${fmt(baseSize)}.`);
+        const needed = reqs.reduce((a, q) => a + q.hosts, 0), usable = sorted.reduce((a, q) => a + q.size - 2, 0);
+        let h = '';
+        if (baseNet !== ipInt) h += `<div class="note">Hinweis: ${intToIp(ipInt)} ist keine Netzadresse — verwendet wird ${intToIp(baseNet)}/${base}.</div>`;
+        h += `<div class="results">
+            <div class="resitem"><span class="k">Netze</span><span class="v">${sorted.length}</span></div>
+            <div class="resitem"><span class="k">Belegt</span><span class="v">${fmt(off)} / ${fmt(baseSize)}</span></div>
+            <div class="resitem"><span class="k">Frei im /${base}</span><span class="v">${fmt(baseSize - off)}</span></div>
+            <div class="resitem"><span class="k">Ungenutzte Hosts</span><span class="v">${fmt(usable - needed)}</span></div>
+        </div><div class="explain">VLSM vergibt die größte Anforderung zuerst: So beginnt jedes Subnetz automatisch auf einem Vielfachen seiner Blockgröße und nichts überlappt. Jedes Netz bekommt das kleinste Präfix mit 2<sup>Hostbits</sup> − 2 ≥ benötigte Hosts.</div>`;
+        h += '<div class="vl-vis" aria-hidden="true">' + sorted.map((q, k) => `<span class="c${k % 4}" style="flex:0 0 ${q.size / baseSize * 100}%" title="${q.name}: /${q.c}">${q.size / baseSize > .08 ? q.name.replace('Netz ', '') : ''}</span>`).join('') + '<span class="rest"></span></div>';
+        let rows = '';
+        for (const q of sorted) {
+            const inf = subnetInfo((baseNet + q.off) >>> 0, q.c);
+            rows += `<tr data-ip="${intToIp(inf.network)}" data-c="${q.c}"><td>${q.name}</td><td>${fmt(q.hosts)}</td><td>${intToIp(inf.network)}/${q.c}</td><td>${intToIp(inf.firstHost)} – ${intToIp(inf.lastHost)}</td><td>${intToIp(inf.broadcast)}</td><td>${fmt(inf.usable - q.hosts)}</td></tr>`;
+        }
+        h += `<div class="table-wrap tall"><table class="clickable"><thead><tr><th>Name</th><th>Hosts</th><th>Netz</th><th>Hostbereich</th><th>Broadcast</th><th>Reserve</th></tr></thead><tbody>${rows}</tbody></table></div>`;
+        out.innerHTML = h;
+    }
     function render() {
         const r = readIp(ip), base = readPrefix(cidrEl);
+        if (!r.valid) return errBox(r.error);
+        if (base === null) return errBox('Präfix muss zwischen /0 und /32 liegen.');
+        const ipInt = ipToInt(r.octets), baseNet = (ipInt & cidrToMaskInt(base)) >>> 0;
+        if (mode() === 'vlsm') return renderVlsm(ipInt, baseNet, base);
         const want = parseInt(n.value, 10);
         markValid(n, want >= 1);
-        if (!r.valid) {out.innerHTML = `<div class="error">${r.error}</div>`; return;}
-        if (base === null) {out.innerHTML = '<div class="error">Präfix muss zwischen /0 und /32 liegen.</div>'; return;}
-        if (!(want >= 1)) {out.innerHTML = '<div class="error">Bitte eine Zahl ≥ 1 eingeben.</div>'; return;}
-        const ipInt = ipToInt(r.octets), baseNet = (ipInt & cidrToMaskInt(base)) >>> 0;
+        if (!(want >= 1)) return errBox('Bitte eine Zahl ≥ 1 eingeben.');
         let newC, why;
         if (mode() === 'nets') {
             const borrow = Math.ceil(Math.log2(want));
@@ -495,7 +544,7 @@ const splitter = (function () {
         if (e.target.id === 'spmore') {showAll = !showAll; render(); return;}
         const tr = e.target.closest('tr[data-ip]'); if (tr) calc.load(tr.dataset.ip, tr.dataset.c);
     });
-    [ip, cidrEl, n].forEach(el => el.addEventListener('input', () => {showAll = false; render();}));
+    [ip, cidrEl, n, vl].forEach(el => el.addEventListener('input', () => {showAll = false; render();}));
     return {render};
 })();
 
@@ -588,6 +637,18 @@ const quiz = (function () {
             const correct = '/' + cidr;
             return {q: `Welches ist das längste Präfix (kleinste Netz), das ${code(fmt(want))} Hosts aufnimmt?`, options: options(correct, shuffle(['/' + (cidr + 1), '/' + (cidr - 1), '/' + (cidr + 2), '/' + (cidr - 2)])), correct, explain: `/${cidr} bietet 2<sup>${hb}</sup> − 2 = ${fmt(info.usable)} Hosts ≥ ${fmt(want)}. Ein /${cidr + 1} hätte nur ${fmt(subnetInfo(0, cidr + 1).usable)} — zu wenig.`};
         },
+        binary() {
+            const v = randInt(1, 254), vals = [128, 64, 32, 16, 8, 4, 2, 1];
+            const parts = vals.filter(x => v & x);
+            const explain = `${toBin8(v).split('').map((b, i) => b === '1' ? `<b>${vals[i]}</b>` : '0').join(' · ')} → ${parts.join(' + ')} = ${v}`;
+            const flips = shuffle([0, 1, 2, 3, 4, 5, 6, 7]).map(k => v ^ (1 << k));
+            if (Math.random() < 0.5) {
+                const correct = toBin8(v);
+                return {q: `Wie lautet ${code(v)} binär?`, options: options(correct, flips.map(toBin8)), correct, explain};
+            }
+            const correct = String(v);
+            return {q: `Welcher Dezimalwert ist ${code(toBin8(v))}?`, options: options(correct, flips.map(String)), correct, explain};
+        },
         mask() {
             const cidr = randInt(9, 30), correct = maskStr(cidr);
             if (Math.random() < 0.5) {
@@ -604,7 +665,7 @@ const quiz = (function () {
     }
     function newTask() {
         let m = mode();
-        if (m === 'mix') m = ['classify', 'netbc', 'hosts', 'mask'][randInt(0, 3)];
+        if (m === 'mix') m = ['classify', 'netbc', 'hosts', 'mask', 'binary'][randInt(0, 4)];
         cur = gens[m]();
         answered = false;
         fb.innerHTML = '';
@@ -661,6 +722,28 @@ const quiz = (function () {
     }
     pow.addEventListener('click', e => {const b = e.target.closest('button'); if (b) {sel = +b.dataset.i; render();}});
     render();
+})();
+
+// ---------- Farbschema ----------
+(function () {
+    const KEY = 'subnetting-lab-theme', btn = $('themebtn'), mq = matchMedia('(prefers-color-scheme: light)');
+    const labels = {auto: '◐ Auto', light: '☀ Hell', dark: '☾ Dunkel'};
+    let t = 'auto';
+    try {t = localStorage.getItem(KEY) || 'auto';} catch { /* ignorieren */ }
+    function apply() {
+        const r = t === 'auto' ? (mq.matches ? 'light' : 'dark') : t;
+        document.documentElement.setAttribute('data-theme', r);
+        document.querySelector('meta[name=theme-color]').content = r === 'light' ? '#eef1fb' : '#141030';
+        btn.textContent = labels[t];
+        btn.title = 'Farbschema: ' + labels[t].slice(2) + ' (klicken zum Wechseln)';
+    }
+    btn.addEventListener('click', () => {
+        t = {auto: 'light', light: 'dark', dark: 'auto'}[t];
+        try {localStorage.setItem(KEY, t);} catch { /* ignorieren */ }
+        apply();
+    });
+    mq.addEventListener('change', () => t === 'auto' && apply());
+    apply();
 })();
 
 // ---------- Initial render ----------

@@ -8,6 +8,14 @@
     <meta name="description" content="Interaktives CCNA-Subnetting-Lab: IPv4-Adressen, Präfixe und Subnetze visuell verstehen und üben.">
     <title>CCNA Subnetting Lab</title>
     <link rel="stylesheet" href="styles.css">
+    <script>
+        (function () {
+            var t = 'auto';
+            try {t = localStorage.getItem('subnetting-lab-theme') || 'auto';} catch (e) { }
+            var r = t === 'auto' ? (matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark') : t;
+            document.documentElement.setAttribute('data-theme', r);
+        })();
+    </script>
 </head>
 
 <body>
@@ -34,6 +42,7 @@
 
         <div class="content">
             <header class="intro" id="top">
+                <button type="button" class="chip theme-btn" id="themebtn" aria-label="Farbschema wechseln">◐ Auto</button>
                 <h1>CCNA Subnetting Lab</h1>
                 <p>Ändere eine Zahl, klicke auf ein Bit oder ein Subnetz — und sieh sofort, was im Netzwerk passiert,
                     inklusive Erklärung, warum.</p>
@@ -87,6 +96,7 @@
                         <button type="button" class="chip" id="s1prev">◀ Vorheriges Netz</button>
                         <button type="button" class="chip" id="s1next">Nächstes Netz ▶</button>
                         <button type="button" class="chip" id="s1rand">🎲 Zufall</button>
+                        <button type="button" class="chip" id="s1share">🔗 Link kopieren</button>
                     </div>
                     <div id="s1error" class="error" role="alert"></div>
                     <div id="s1bits" class="octs"></div>
@@ -169,7 +179,8 @@
                 <section class="block span-2" id="split">
                     <h2>Subnetz-Teiler</h2>
                     <p class="sub">Teile ein Netz in gleich große Subnetze — nach Anzahl der Netze oder nach benötigten
-                        Hosts. Tippe auf eine Zeile, um sie im Rechner zu öffnen.</p>
+                        Hosts. Mit <b>VLSM</b> bekommt jedes Netz genau die Größe, die es braucht. Tippe auf eine Zeile, um
+                        sie im Rechner zu öffnen.</p>
                     <div class="controls">
                         <div class="field"><label for="spip">Ausgangsnetz</label><input type="text" class="ip"
                                 id="spip" value="192.168.1.0"></div>
@@ -180,21 +191,26 @@
                                     type="number" id="spcidr" value="24" min="0" max="32"><button type="button"
                                     data-step="1" aria-label="Präfix vergrößern">+</button></div>
                         </div>
-                        <div class="field">
+                        <div class="field seg-field">
                             <span class="label" id="spmodelbl">Aufteilen nach</span>
                             <div class="seg" role="radiogroup" aria-labelledby="spmodelbl" id="spmode">
                                 <button type="button" role="radio" aria-checked="true" data-mode="nets">Anzahl
                                     Netze</button>
                                 <button type="button" role="radio" aria-checked="false" data-mode="hosts">Hosts pro
                                     Netz</button>
+                                <button type="button" role="radio" aria-checked="false" data-mode="vlsm">VLSM</button>
                             </div>
                         </div>
-                        <div class="field prefix">
+                        <div class="field prefix" id="spnfield">
                             <label for="spn" id="spnlbl">Benötigte Netze</label>
                             <div class="stepper"><button type="button" data-step="-1"
                                     aria-label="Weniger">−</button><input type="number" id="spn" value="4" min="1"
                                     max="16777216"><button type="button" data-step="1" aria-label="Mehr">+</button>
                             </div>
+                        </div>
+                        <div class="field" id="spvlfield" hidden>
+                            <label for="spvl">Hosts je Netz (durch Komma getrennt)</label>
+                            <input type="text" id="spvl" value="50, 20, 10, 2" inputmode="numeric" autocomplete="off">
                         </div>
                     </div>
                     <div id="spout" aria-live="polite"></div>
@@ -245,6 +261,7 @@
                         <button type="button" role="radio" aria-checked="false" data-mode="netbc">Netz/Broadcast</button>
                         <button type="button" role="radio" aria-checked="false" data-mode="hosts">Hosts</button>
                         <button type="button" role="radio" aria-checked="false" data-mode="mask">Masken</button>
+                        <button type="button" role="radio" aria-checked="false" data-mode="binary">Binär</button>
                     </div>
                     <div class="score" id="qscore"></div>
                     <div class="task" id="qtask"></div>
